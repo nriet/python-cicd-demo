@@ -15,7 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_NAME: nriet/nriet123
+  # 镜像地址不写死在仓库代码里，由仓库变量提供（Settings → Secrets and variables → Actions → Variables）
+  # 变量名 DOCKERHUB_IMAGE，格式 <namespace>/<repository>
+  IMAGE_NAME: ${{ vars.DOCKERHUB_IMAGE }}
   PYTHON_VERSION: '3.12'
   PLATFORMS: linux/amd64,linux/arm64
 
@@ -69,6 +71,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # 镜像地址来自仓库变量，缺失时立刻失败，避免把镜像推到空地址
+      - name: Validate image configuration
+        run: |
+          if [ -z "${IMAGE_NAME}" ]; then
+            echo "::error::仓库变量 DOCKERHUB_IMAGE 未配置：Settings → Secrets and variables → Actions → Variables 新增 DOCKERHUB_IMAGE=<namespace>/<repository>"
+            exit 1
+          fi
+          echo "目标镜像: ${IMAGE_NAME}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
